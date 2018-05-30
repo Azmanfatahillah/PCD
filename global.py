@@ -13,8 +13,6 @@ fixed_size = tuple((100, 100))
 # path to training data
 train_path = "C:\\Users\Azman\PycharmProjects\ProjekPCD\daunA"
 
-# no.of.trees for Random Forests
-num_trees = 100
 
 # bins for histogram
 bins = 8
