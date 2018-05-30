@@ -1,18 +1,18 @@
 from sklearn.preprocessing import LabelEncoder
 from sklearn.preprocessing import MinMaxScaler
 import numpy as np
-import mahotas
+#import mahotas
 import cv2
 import os
 import h5py
 import glob
+from matplotlib import pyplot as plt
 
 # fixed-sizes for image
 fixed_size = tuple((100, 100))
 
 # path to training data
 train_path = "C:\\Users\Azman\PycharmProjects\ProjekPCD\daunA"
-
 
 # bins for histogram
 bins = 8
@@ -31,14 +31,16 @@ def fd_hu_moments(image):
     return feature
 
 
-# atribut-2: Haralick Texture
-def fd_haralick(image):
-    # convert the image to grayscale
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    # compute the haralick texture feature vector
-    haralick = mahotas.features.haralick(gray).mean(axis=0)
-    # return the result
-    return haralick
+# atribut-2: canny
+
+#def canny(image):
+    #img = cv2.imread('messi5.jpg',0)
+   # image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    #plt.cann = cv2.Canny(image,100,100)
+    #plt.subplot(121)
+    #plt.title('Original Image'), plt.xticks([]), plt.yticks([])
+    #plt.subplot(122),plt.title('Edge Image'), plt.xticks([]), plt.yticks([])
+
 
 
 # atribut-3: Color Histogram
@@ -81,7 +83,7 @@ for training_name in train_labels:
     # print dir
     k = 1
     # loop over the images in each sub-folder
-    for file in glob.glob("C:\\Users\Azman\PycharmProjects\ProjekPCD\daunA"):
+    for file in glob.glob("C:\\Users\Azman\PycharmProjects\ProjekPCD\daunA/*jpg"):
         # get the image file name
         print(file)
 
@@ -93,13 +95,14 @@ for training_name in train_labels:
         # Global Feature extraction
         ####################################
         fv_hu_moments = fd_hu_moments(image)
-        fv_haralick = fd_haralick(image)
+        #fv_haralick = fd_haralick(image)
         fv_histogram = fd_histogram(image)
+        #fv_canny = canny(image)
 
         ###################################
         # Concatenate global features
         ###################################
-        global_feature = np.hstack([fv_histogram, fv_haralick, fv_hu_moments])
+        global_feature = np.hstack([fv_histogram, fv_hu_moments])
 
         # update the list of labels and feature vectors
         labels.append(current_label)
