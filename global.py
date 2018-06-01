@@ -1,58 +1,26 @@
 from sklearn.preprocessing import LabelEncoder
 from sklearn.preprocessing import MinMaxScaler
 import numpy as np
-#import mahotas
 import cv2
 import os
-import h5py
 import glob
-from matplotlib import pyplot as plt
+import csv
+import pip
 
 # fixed-sizes for image
-fixed_size = tuple((100, 100))
+fixed_size = tuple((300,300))
 
 # path to training data
-train_path = "C:\\Users\Azman\PycharmProjects\ProjekPCD\daunA"
+train_path = "./coba/"
 
 # bins for histogram
 bins = 8
 
 # train_test_split size
-test_size = 0.10
+test_size = 0.30
 
 # seed for reproducing same results
 seed = 9
-
-
-# atribut-1: Hu Moments
-def fd_hu_moments(image):
-    image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    feature = cv2.HuMoments(cv2.moments(image)).flatten()
-    return feature
-
-
-# atribut-2: canny
-
-#def canny(image):
-    #img = cv2.imread('messi5.jpg',0)
-   # image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    #plt.cann = cv2.Canny(image,100,100)
-    #plt.subplot(121)
-    #plt.title('Original Image'), plt.xticks([]), plt.yticks([])
-    #plt.subplot(122),plt.title('Edge Image'), plt.xticks([]), plt.yticks([])
-
-
-
-# atribut-3: Color Histogram
-def fd_histogram(image, mask=None):
-    # convert the image to HSV color-space
-    image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
-    # compute the color histogram
-    hist = cv2.calcHist([image], [0, 1, 2], None, [bins, bins, bins], [0, 256, 0, 256, 0, 256])
-    # normalize the histogram
-    cv2.normalize(hist, hist)
-    # return the histogram
-    return hist.flatten()
 
 
 # get the training labels
@@ -69,10 +37,43 @@ labels = []
 i, j = 0, 0
 k = 0
 
-# # num of images per class
-# images_per_class = 80
+images_per_class = 300
 
-# %%time
+#====================================================================
+
+def fd_hu_moments(image):
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    feature = cv2.HuMoments(cv2.moments(image)).flatten()
+    return feature
+
+
+def canny(image):
+	image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+	edges = cv2.Canny(image,20,255,L2gradient=False)  #edges = cv2.Canny(im,lower_threshold,upper_threshold,L2gradient=False)
+	return edges
+
+
+#def fd_haralick(image):
+    # convert the image to grayscale
+ #   gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    # compute the haralick texture feature vector
+ #   haralick = mahotas.features.haralick(gray).mean(axis=0)
+    # return the result
+  #  return haralick
+
+def fd_histogram(image, mask=None):
+    # convert the image to HSV color-space
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+    # compute the color histogram
+    hist  = cv2.calcHist([image], [0, 1, 2], None, [bins, bins, bins], [0, 256, 0, 256, 0, 256])
+    # normalize the histogram
+    cv2.normalize(hist, hist)
+    # return the histogram
+    return hist.flatten()
+
+
+#==================================================================
+
 # loop over the training data sub-folders
 for training_name in train_labels:
     # join the training data path and each species training folder
@@ -80,13 +81,15 @@ for training_name in train_labels:
 
     # get the current training label
     current_label = training_name
-    # print dir
+
     k = 1
     # loop over the images in each sub-folder
-    for file in glob.glob("C:\\Users\Azman\PycharmProjects\ProjekPCD\daunA/*jpg"):
+    # for x in range(1,images_per_class+1):
+    # loop through the test images
+    for file in glob.glob(dir + "/*.jpg"):
         # get the image file name
+        # file = dir + "/" + str(x) + ".jpg"
         print(file)
-
         # read the image and resize it to a fixed-size
         image = cv2.imread(file)
         image = cv2.resize(image, fixed_size)
@@ -95,17 +98,13 @@ for training_name in train_labels:
         # Global Feature extraction
         ####################################
         fv_hu_moments = fd_hu_moments(image)
-        #fv_haralick = fd_haralick(image)
-        fv_histogram = fd_histogram(image)
-        #fv_canny = canny(image)
-
+        fv_canny = canny(image)
+        fv_histogram  = fd_histogram(image)
         ###################################
         # Concatenate global features
         ###################################
-        global_feature = np.hstack([fv_histogram, fv_hu_moments])
+        global_feature = np.hstack([fv_histogram, fv_canny, fv_hu_moments,current_label])
 
-        # update the list of labels and feature vectors
-        labels.append(current_label)
         global_features.append(global_feature)
 
         i += 1
@@ -115,8 +114,11 @@ for training_name in train_labels:
 
 print("[STATUS] completed Global Feature Extraction...")
 
+#==========================================================================================
+
 # get the overall feature vector size
 print("[STATUS] feature vector size {}".format(np.array(global_features).shape))
+
 # get the overall training label size
 print("[STATUS] training Labels {}".format(np.array(labels).shape))
 
@@ -124,24 +126,20 @@ print("[STATUS] training Labels {}".format(np.array(labels).shape))
 targetNames = np.unique(labels)
 le = LabelEncoder()
 target = le.fit_transform(labels)
-print ("[STATUS] training labels encoded...")
+print("[STATUS] training labels encoded...")
 
 # normalize the feature vector in the range (0-1)
-scaler = MinMaxScaler(feature_range=(0, 1))
-rescaled_features = scaler.fit_transform(global_features)
-print ("[STATUS] feature vector normalized...")
+# scaler = MinMaxScaler(feature_range=(0, 1))
+# rescaled_features = scaler.fit_transform(global_features)
+# print "[STATUS] feature vector normalized..."
 
 print("[STATUS] target labels: {}".format(target))
 print("[STATUS] target labels shape: {}".format(target.shape))
 
-# save the feature vector using HDF5
-h5f_data = h5py.File('output/data.h5', 'w')
-h5f_data.create_dataset('dataset_1', data=np.array(rescaled_features))
 
-h5f_label = h5py.File('output/labels.h5', 'w')
-h5f_label.create_dataset('dataset_1', data=np.array(target))
-
-h5f_data.close()
-h5f_label.close()
+with open('cannypixel.csv', 'wb') as myDaun:
+    daun = csv.writer(myDaun, dialect='excel')
+    daun.writerows(global_features)
+myDaun.close()
 
 print("[STATUS] end of training..")
